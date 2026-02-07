@@ -1,5 +1,6 @@
 import socket
 
+#1024 Bytes - 8192 Bits (Personal Note: MP3 has a lot more bytes than that)
 PACKET_SIZE = 1024
 SEQ_ID_SIZE = 4
 MESSAGE_SIZE = PACKET_SIZE - SEQ_ID_SIZE
@@ -10,9 +11,19 @@ SENT_DATA = {}
 #SEQ ID Acks that were returned
 ACK_RECEVID = {}
 #ACKS Sent Back to Rec
-FINACKS_SENT = {}
+FINACKS_EXPECTED_TO_SEND = {}
 
-#Convert Binary File to Mp3
+#IP Address and Host
+HOST = '0.0.0.0'
+#Possibly change
+Src_PORT = 4500
+
+Dst_PORT = 5001
+
+#Convert Mp3 to Byte File
+file_path = 'file.mp3'
+with open(file_path, 'rb') as file:
+    mp3_byte = file.read()
 
 
 #Creates Final+ACK to send back to receiever
@@ -20,9 +31,14 @@ FINACKS_SENT = {}
 def create_FINACK(seq_id, message):
     return int.to_bytes(seq_id, SEQ_ID_SIZE, signed=True, byteorder='big') + message.encode()
 
+def parse_message()
+
 
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
-    pass
+    #Bind Socket to IP and Port
+    udp_socket.bind(HOST, Src_PORT)
+
+    
 
 
 
