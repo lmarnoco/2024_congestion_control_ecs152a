@@ -13,6 +13,11 @@ ACK_RECEVID = {}
 FINACKS_SENT = {}
 
 #Convert Binary File to Mp3
+file_path = 'file.mp3'
+with open(file_path, 'rb') as file:
+    mp3_binary = file.read()
+
+    
 
 
 #Creates Final+ACK to send back to receiever
