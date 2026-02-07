@@ -33,9 +33,12 @@ with open(file_path, 'rb') as file:
 def create_FINACK(seq_id, message):
     return int.to_bytes(seq_id, SEQ_ID_SIZE, signed=True, byteorder='big') + message.encode()
 
+
 def parse_message():
     #Parse bits like [Packet Size * Expected ID]
-    message = ""
+    message = int.to_bytes(EXPECTED_SEQ_ID) + mp3_byte[EXPECTED_SEQ_ID * 1020].encode('utf-8')
+    
+    #Converts message to a string that can later be returned as integers
     return message
 
 
@@ -53,7 +56,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
 
     #Send Socket
 
-    
+
 
 
 
