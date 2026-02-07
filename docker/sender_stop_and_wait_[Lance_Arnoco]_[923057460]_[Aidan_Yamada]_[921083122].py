@@ -12,8 +12,18 @@ ACK_RECEVID = {}
 #ACKS Sent Back to Rec
 FINACKS_SENT = {}
 
+#Convert Binary File to Mp3
+
+
 #Creates Final+ACK to send back to receiever
 
 def create_FINACK(seq_id, message):
     return int.to_bytes(seq_id, SEQ_ID_SIZE, signed=True, byteorder='big') + message.encode()
+
+
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
+    pass
+
+
+
 
