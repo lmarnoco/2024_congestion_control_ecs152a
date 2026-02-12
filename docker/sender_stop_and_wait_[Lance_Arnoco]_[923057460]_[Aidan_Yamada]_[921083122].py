@@ -28,7 +28,7 @@ socket_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # IPv4, UDP
 def parse_message(): 
     file_path = 'file.mp3'
     with open(file_path, 'rb') as file:
-            file.seek(1020 * EXPECTED_SEQ_ID)
+            file.seek(MESSAGE_SIZE * EXPECTED_SEQ_ID)
             # 
             # mp3_byte = mp3_byte.to_bytes(MESSAGE_SIZE)
             # mp3_byte.insert(0, seq_bytes)
@@ -36,7 +36,7 @@ def parse_message():
             if not encoded_message:
                  return None
             
-            seq_bytes = EXPECTED_SEQ_ID.to_bytes(SEQ_ID_SIZE)
+            seq_bytes = EXPECTED_SEQ_ID.to_bytes(SEQ_ID_SIZE, byteorder='big')
             message_bytes = seq_bytes + encoded_message
             return message_bytes
 
@@ -62,10 +62,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             ack_id = data[:SEQ_ID_SIZE]
 
             seq_ack = int.from_bytes(ack_id, byteorder='big')
-
+        
             if seq_ack == EXPECTED_SEQ_ID:
-                 udp_socket.sendto(create_FINACK(EXPECTED_SEQ_ID, "==FINACK=='"), (HOST, dst_port))
-                 EXPECTED_SEQ_ID += 1
+                EXPECTED_SEQ_ID += 1
+                if parse_message() is None:
+                    udp_socket.sendto(create_FINACK(EXPECTED_SEQ_ID, "==FINACK=="), (HOST, dst_port))
+                    #Done with sending
+                    break
 
 
         except socket.timeout:
