@@ -3,7 +3,7 @@ import socket
 PACKET_SIZE = 1024
 SEQ_ID_SIZE = 4
 MESSAGE_SIZE = PACKET_SIZE - SEQ_ID_SIZE
-EXPECTED_SEQ_ID = 0
+EXPECTED_SEQ_ID = 1020
 
 MAX_WINDOW_SIZE = 100
 
@@ -20,22 +20,24 @@ dst_port = 5001
 # Starting number for sequence id
 id = 0
 
-win_size = 0
+start = 0
+end = start + MAX_WINDOW_SIZE - 1
 
 
-def send_pkt(payload, seq_id):
-    # Convert seq_id into bits
-    seq_bytes = seq_id.to_bytes(SEQ_ID_SIZE, 'big')
+def send_pkt(start, end):
+    for i in range(start, end + 1):
+        # Convert seq_id into bits
+        seq_bytes = (i * MESSAGE_SIZE).to_bytes(SEQ_ID_SIZE, 'big')
 
-    # Makes sure the data read from mp3 is the right size
-    # payload = payload.to_bytes(MESSAGE_SIZE)
+        # Makes sure the data read from mp3 is the right size
+        # payload = payload.to_bytes(MESSAGE_SIZE)
 
-    # Puts sequence id infront of data
-    pkt = seq_bytes + payload
+        # Puts sequence id infront of data
+        pkt = seq_bytes + SENT_DATA[i]
 
-    print("SENDING")
-    socket_client.sendto(pkt, (udp_ip, dst_port))
-    #print(f"Sent message: {pkt} to {udp_ip}:{dst_port}") 
+        print("SENDING WITH ID", i)
+        socket_client.sendto(pkt, (udp_ip, dst_port))
+        #print(f"Sent message: {pkt} to {udp_ip}:{dst_port}") 
 
 
 udp_ip = "127.0.0.1" # Local Host
@@ -47,52 +49,85 @@ print(f"Starting the UDP Client to send to {udp_ip}:{dst_port}")
 # Application layer endpoint connecting to the Transport layer
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as socket_client:
 
-    socket_client.settimeout(5.0)
+    socket_client.settimeout(5)
 
     #Convert Mp3 to Byte File
     file_path = 'file.mp3'
 
-    # I AS CHECKING HOW BIG THE FILE WAS
-    count = 0
+    finish = False
 
-    timeouts = 0
     with open(file_path, 'rb') as file:
         while True:
-            if win_size < MAX_WINDOW_SIZE:
-                mp3_byte = file.read(1020)
+            for i in range(start, end + 1):
+                if not i in SENT_DATA:
+                    mp3_byte = file.read(1020)
 
-                if not mp3_byte:
-                    break
-                else:
-                    send_pkt(mp3_byte, id)
-                    win_size += 1
-                    id += 1
+                    if not mp3_byte:
+                        finish = True
+                        SENT_DATA[i] = b'==FINACK=='
+                        end = i
+                        break
+                    else:
+                        SENT_DATA[i] = mp3_byte
+
+            send_pkt(start, end)
             
-            try:
-                print("REMOVE PKT ", win_size, id)
-                # receive the packet
-                packet, client = socket_client.recvfrom(PACKET_SIZE)
-                print("STUCK")
-                
-                # get the message id
-                seq_id, message = packet[:SEQ_ID_SIZE], packet[SEQ_ID_SIZE:]
-                
-                print("GETTING DATA")
-                # check if finack message
-                if message == b'==FINACK==':
-                    break
-                
-                # if the message id is -1, we have received all the packets
-                seq_id = int.from_bytes(seq_id, signed=True, byteorder='big')
-                
-                # keep track of received sequences
-                RECEIVED_DATA[seq_id] = message
-                
-                print("RECIEVING ACK")
-                # check if sequence id is same as expected and move forward
-                if seq_id <= EXPECTED_SEQ_ID and len(RECEIVED_DATA[seq_id]) > 0:
-                    while EXPECTED_SEQ_ID in RECEIVED_DATA:
-                        EXPECTED_SEQ_ID += 1
-                    win_size -= 1
-            except socket.timeout:
-                timeouts += 1
+            timeouts = 0
+            count = 0
+            while timeouts == 0:
+                try:
+                    print("REMOVE PKT", start, end)
+                    # receive the packet
+                    packet, client = socket_client.recvfrom(PACKET_SIZE)
+
+                    if not packet:
+                        print("IM HERE\n\n\n\n\n\n\n\n\n\n\n\n\n")
+                        break
+                    
+                    # get the message id
+                    id, message = packet[:SEQ_ID_SIZE], packet[SEQ_ID_SIZE:]
+                    
+                    #print("GETTING DATA")
+                    # check if finack message
+                    if message == b'==FINACK==':
+                        break
+                    
+                    # if the message id is -1, we have received all the packets
+                    seq_id = int.from_bytes(id, signed=True, byteorder='big')
+                    print("RECIEVED SEQ ID", seq_id)
+                    print("EXPECTED SEQ ID", EXPECTED_SEQ_ID)
+
+                    if seq_id >= EXPECTED_SEQ_ID:
+                        # diff = seq_id - EXPECTED_SEQ_ID
+                        # for i in range(0, diff):
+                        #     ACK_RECEVID[EXPECTED_SEQ_ID + (MESSAGE_SIZE * i)] = message
+                        ACK_RECEVID[EXPECTED_SEQ_ID] = message
+
+                        EXPECTED_SEQ_ID += MESSAGE_SIZE
+                        start += 1
+                        end += 1
+
+
+                    #ACK_RECEVID[seq_id] = message
+                    
+                    # print("RECIEVING ACK")
+                    # print(seq_id <= EXPECTED_SEQ_ID, len(ACK_RECEVID[seq_id]))
+                    # print(EXPECTED_SEQ_ID in ACK_RECEVID)
+                    # # check if sequence id is same as expected and move forward
+                    # if len(ACK_RECEVID[seq_id]) > 0:
+                    #     while EXPECTED_SEQ_ID in ACK_RECEVID:
+                    #         print("LOOPING")
+                    #         EXPECTED_SEQ_ID += MESSAGE_SIZE
+                    #         start += 1
+                    #         end += 1
+                        
+                except socket.timeout:
+                    print("\n\n\n\n\n\nTIMED OUT")
+                    #EXPECTED_SEQ_ID = start * MESSAGE_SIZE
+                    timeouts += 1
+            
+            if finish:
+                print("IM FREEEEEEEEEEEEEEE")
+                break
+
+        print("EXIT")
