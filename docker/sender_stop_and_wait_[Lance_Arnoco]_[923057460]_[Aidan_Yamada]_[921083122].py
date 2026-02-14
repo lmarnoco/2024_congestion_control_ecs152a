@@ -115,7 +115,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             #print(f"Sent message: {EXPECTED_SEQ_ID} to {src_port}:{dst_port}")
     
 #1 Trial
-print(f"Throughput - {sum_throughput}")
-print(f"Avg Packet Delay - {avg_packet_delay}")
-print(f"Avg Performance - {performance}")
+
+print(f"{sum_throughput:.7f}, \n")
+print(f"{avg_packet_delay:.7f}, \n")
+print(f"{performance:.7f} \n")
 
